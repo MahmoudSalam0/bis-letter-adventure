@@ -1,5 +1,7 @@
 import { AUTO, Game, Scale } from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from './config/GameConfig';
+import { attachFullscreenExitControl } from './fullscreen/fullscreenControl';
+import { attachViewportRefresh } from './scale/attachViewportRefresh';
 import { BalloonPop } from './scenes/BalloonPop';
 import { Boot } from './scenes/Boot';
 import { CatchTheLetter } from './scenes/CatchTheLetter';
@@ -37,7 +39,11 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const StartGame = (parent: string) => {
 
-    return new Game({ ...config, parent });
+    const game = new Game({ ...config, parent });
+    attachViewportRefresh(game);
+    attachFullscreenExitControl();
+
+    return game;
 
 }
 

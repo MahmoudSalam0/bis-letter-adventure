@@ -1,4 +1,6 @@
 import { GameObjects, Scene } from 'phaser';
+import { restoreMusicVolumeImmediately, startBackgroundMusic, duckMusicFor } from '../audio/backgroundMusic';
+import { AudioVolumes } from '../audio/audioVolumes';
 import { unlockAudio } from '../audio/unlockAudio';
 import { AssetKeys } from '../config/AssetKeys';
 import { BisColors, GAME_CENTER_X, GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
@@ -7,6 +9,7 @@ import { letterB } from '../content/letters';
 import { Mascot } from '../entities/Mascot';
 import { GameState } from '../state/GameState';
 import { fadeInScene, goToScene } from '../ui/SceneTransition';
+import { requestGameFullscreen } from '../fullscreen/fullscreenControl';
 
 const GROUND_Y = 565;
 const MASCOT_X = 290;
@@ -21,6 +24,13 @@ const LETTER_HALO_X = 645;
 const LETTER_HALO_Y = 275;
 
 const SPARKLE_DISPLAY_SIZE = 34;
+
+// Fallback if the decoded clip's real duration isn't available yet; the
+// actual measured duration is preferred and used whenever it's > 0.
+const NARRATION_FALLBACK_MS = 3800;
+// Hard cap so a future, unexpectedly long narration clip can never stall
+// the transition into gameplay for an excessive amount of time.
+const NARRATION_MAX_WAIT_MS = 5000;
 
 /**
  * The first real scene of the game: the illustrated welcome-bg artwork with
@@ -56,6 +66,8 @@ export class Welcome extends Scene {
         // Let the mascot settle into pointing at the letters shortly after
         // both have finished their entrance (b settles at ~1400ms).
         this.time.delayedCall(1500, () => this.mascot.pointToLetters());
+
+        this.events.once('shutdown', this.handleShutdown, this);
 
         fadeInScene(this);
     }
@@ -262,8 +274,33 @@ export class Welcome extends Scene {
         this.hasLeft = true;
 
         button.disableInteractive();
-        unlockAudio(this);
 
-        goToScene(this, SceneKeys.BalloonPop);
+        // Both of these need the real, still-live user gesture from this
+        // pointer event — done first and synchronously, before anything else.
+        unlockAudio(this);
+        requestGameFullscreen();
+
+        startBackgroundMusic(this);
+        this.sound.play(AssetKeys.Audio.Sfx.ButtonTap, { volume: AudioVolumes.buttonTap });
+
+        const narration = this.sound.add(AssetKeys.Audio.Narrator.LetterBIntro);
+        narration.play({ volume: AudioVolumes.narrator });
+
+        const measuredMs = narration.duration > 0 ? narration.duration * 1000 : NARRATION_FALLBACK_MS;
+        const waitMs = Math.min(measuredMs, NARRATION_MAX_WAIT_MS) + 250;
+
+        duckMusicFor(this, waitMs);
+
+        this.time.delayedCall(waitMs, () => goToScene(this, SceneKeys.BalloonPop));
+    }
+
+    private handleShutdown(): void {
+        this.time.removeAllEvents();
+        this.sound.stopByKey(AssetKeys.Audio.Sfx.ButtonTap);
+        this.sound.stopByKey(AssetKeys.Audio.Narrator.LetterBIntro);
+        // Never stop the music key here — it's the one persistent track that
+        // must survive into BalloonPop. Just guard against a duck left
+        // mid-fade if narration was somehow interrupted.
+        restoreMusicVolumeImmediately(this);
     }
 }

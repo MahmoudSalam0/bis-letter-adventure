@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="stylesheet" href="/style.css">
     <title>BIS Letter Adventure</title>
 </head>
 
 <body>
+    <!--
+      #app is the fullscreen target: it must contain the canvas, the
+      portrait overlay, and the fullscreen exit control together, since
+      requestFullscreen() only keeps *that element's own subtree* visible —
+      anything outside it would be hidden while fullscreen is active.
+    -->
     <div id="app">
         <div id="game-container"></div>
+        <div id="rotate-overlay">
+            <div class="rotate-overlay__icon">↻</div>
+            <p class="rotate-overlay__title">Rotate your device</p>
+            <p class="rotate-overlay__subtitle">to play</p>
+        </div>
+        <button id="fullscreen-exit" type="button" aria-label="Exit fullscreen">✕</button>
     </div>
     <script type="module" src="/src/main.ts"></script>
 </body>
