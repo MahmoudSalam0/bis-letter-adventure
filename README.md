@@ -88,6 +88,16 @@ After you run the `npm run build` command, your code will be built into a single
 
 In order to deploy your game, you will need to upload *all* of the contents of the `dist` folder to a public facing web server.
 
+## Installable / Offline (PWA)
+
+The production build is a Progressive Web App, configured with [`vite-plugin-pwa`](https://vite-pwa-org.netlify.app/) in `vite/config.prod.mjs`. The build emits `manifest.webmanifest`, `sw.js` and `registerSW.js` into `dist`, and the service worker precaches the whole game (JS, CSS, HTML, and every image and audio file under `public/assets`). App icons live in `public/icons`.
+
+- **Install:** open the deployed site in Chrome or Edge and use the install icon in the address bar. On Android, use *Install app* / *Add to Home screen*. On iOS Safari, use *Share → Add to Home Screen*.
+- **Offline:** open the site online once and wait for it to finish loading, so everything gets cached. After that the game, including its audio, runs with no network connection.
+- **Local check:** `npm run build-nolog && npx vite preview --config vite/config.prod.mjs`, then open the printed `localhost` URL. Service workers only run on `localhost` or HTTPS.
+
+The PWA plugin is only active in production builds. `npm run dev` works exactly as before.
+
 ## Customizing the Template
 
 ### Vite
